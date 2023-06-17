@@ -1,0 +1,322 @@
+package trabalho.java;
+
+import java.math.BigDecimal;
+import java.sql.*;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+public class TrabalhoJava {
+
+    private static final String URL = "jdbc:postgresql://localhost:5432/TrabalhoJava";
+    private static final String USUARIO = "postgres";
+    private static final String SENHA = "fraco123";
+
+    public static void main(String[] args) {
+        try {
+            Connection conexao = DriverManager.getConnection(URL, USUARIO, SENHA);
+            Statement statement = conexao.createStatement();
+
+            String criarTabelaAutomoveis = "CREATE TABLE IF NOT EXISTS automoveis (id SERIAL PRIMARY KEY, id_estoque INT, marca VARCHAR(100), modelo VARCHAR(100), ano INT, valor NUMERIC(10, 2))";
+            statement.executeUpdate(criarTabelaAutomoveis);
+
+            String inserirAutomovel1 = "INSERT INTO automoveis (id_estoque, marca, modelo, ano, valor) VALUES (1, 'Subaru', 'Impreza WRX', 2022, 283000)";
+            statement.executeUpdate(inserirAutomovel1);
+
+            String inserirAutomovel2 = "INSERT INTO automoveis (id_estoque, marca, modelo, ano, valor) VALUES (2, 'Chevrolet', 'S10', 2020, 108990)";
+            statement.executeUpdate(inserirAutomovel2);
+
+            String inserirAutomovel3 = "INSERT INTO automoveis (id_estoque, marca, modelo, ano, valor) VALUES (3, 'BMW', 'X6', 2022, 700000)";
+            statement.executeUpdate(inserirAutomovel3);
+
+            String inserirAutomovel4 = "INSERT INTO automoveis (id_estoque, marca, modelo, ano, valor) VALUES (4, 'MERCEDES', 'A45 AMG', 2023, 545900)";
+            statement.executeUpdate(inserirAutomovel4);
+
+            String inserirAutomovel5 = "INSERT INTO automoveis (id_estoque, marca, modelo, ano, valor) VALUES (5, 'BMW', '320i', 2023, 315950)";
+            statement.executeUpdate(inserirAutomovel5);
+
+            String inserirAutomovel6 = "INSERT INTO automoveis (id_estoque, marca, modelo, ano, valor) VALUES (6, 'Audi', 'RS6', 2022, 1029990)";
+            statement.executeUpdate(inserirAutomovel6);
+
+            String inserirAutomovel7 = "INSERT INTO automoveis (id_estoque, marca, modelo, ano, valor) VALUES (7, 'Audi', 'R8', 2023, 1659990)";
+            statement.executeUpdate(inserirAutomovel7);
+
+            String inserirAutomovel8 = "INSERT INTO automoveis (id_estoque, marca, modelo, ano, valor) VALUES (8, 'Mercedes', 'AMG GT Black Series', 2020, 2000000)";
+            statement.executeUpdate(inserirAutomovel8);
+
+            String inserirAutomovel9 = "INSERT INTO automoveis (id_estoque, marca, modelo, ano, valor) VALUES (9, 'BMW', 'X5', 2020, 665704)";
+            statement.executeUpdate(inserirAutomovel9);
+
+            String inserirAutomovel10 = "INSERT INTO automoveis (id_estoque, marca, modelo, ano, valor) VALUES (10, 'Mitsubishi', 'ASX', 2022, 166757)";
+            statement.executeUpdate(inserirAutomovel10);
+
+
+           
+
+            boolean continuar = true;
+            while (continuar) {
+                Scanner scanner = new Scanner(System.in);
+                System.out.println("\nEscolha uma opção:");
+                System.out.println("1. Visualizar lista de carros");
+                System.out.println("2. Comprar um veículo");
+                System.out.println("3. Cadastrar um veículo para venda");
+                System.out.println("4. Visualizar a lista de carros (ordem decrescente por ano)");
+                System.out.println("5. Editar veículo cadastrado");
+                System.out.println("6. Remover um veículo");
+                System.out.println("0. Sair");
+                System.out.print("Opção: ");
+                int opcao = scanner.nextInt();
+
+                switch (opcao) {
+                    case 1:
+                        visualizarListaCarros(statement);
+                        break;
+                    case 2:
+                        comprarVeiculo(conexao, statement);
+                        break;
+                    case 3:
+                        cadastrarVeiculo(conexao, statement);
+                        break;
+                    case 4:
+                        visualizarListaVeiculos(statement);
+                        break;
+                    case 5:
+                        editarVeiculo(conexao, statement);
+                        break;
+                    case 6:
+                        removerVeiculo(statement, scanner);
+                        break;
+                    case 0:
+                        continuar = false;
+                        break;
+                    default:
+                        System.out.println("Opção inválida.");
+                }
+            }
+
+            statement.close();
+            conexao.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void visualizarListaCarros(Statement statement) throws SQLException {
+        String lerAutomoveis = "SELECT * FROM automoveis";
+        ResultSet resultSetAutomoveis = statement.executeQuery(lerAutomoveis);
+
+        DecimalFormat decimalFormat = new DecimalFormat("#,##0.00");
+
+        System.out.println("\nLista de Carros Disponíveis:");
+        System.out.println("---------------------------");
+
+        while (resultSetAutomoveis.next()) {
+            int id = resultSetAutomoveis.getInt("id_estoque");
+            String marca = resultSetAutomoveis.getString("marca");
+            String modelo = resultSetAutomoveis.getString("modelo");
+            int ano = resultSetAutomoveis.getInt("ano");
+            BigDecimal valor = resultSetAutomoveis.getBigDecimal("valor");
+
+            System.out.println("ID: " + id);
+            System.out.println("Marca: " + marca);
+            System.out.println("Modelo: " + modelo);
+            System.out.println("Ano: " + ano);
+            System.out.println("Valor: R$ " + decimalFormat.format(valor));
+            System.out.println("---------------------------");
+        }
+
+        resultSetAutomoveis.close();
+    }
+
+    private static void comprarVeiculo(Connection conexao, Statement statement) throws SQLException {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Digite o ID do veículo que deseja comprar (0 para cancelar): ");
+        int idSelecionado = scanner.nextInt();
+
+        if (idSelecionado != 0) {
+            String selecionarAutomovel = "SELECT * FROM automoveis WHERE id_estoque = ?";
+            PreparedStatement preparedStatement = conexao.prepareStatement(selecionarAutomovel);
+            preparedStatement.setInt(1, idSelecionado);
+
+            ResultSet resultSetAutomovel = preparedStatement.executeQuery();
+
+            if (resultSetAutomovel.next()) {
+                String marca = resultSetAutomovel.getString("marca");
+                String modelo = resultSetAutomovel.getString("modelo");
+                int ano = resultSetAutomovel.getInt("ano");
+                BigDecimal valor = resultSetAutomovel.getBigDecimal("valor");
+
+                System.out.println("\nDetalhes do Veículo Selecionado:");
+                System.out.println("---------------------------");
+                System.out.println("ID: " + idSelecionado);
+                System.out.println("Marca: " + marca);
+                System.out.println("Modelo: " + modelo);
+                System.out.println("Ano: " + ano);
+                System.out.println("Valor: R$ " + valor);
+                System.out.println("---------------------------");
+
+                System.out.print("Deseja confirmar a compra deste veículo? (S/N): ");
+                String confirmacao = scanner.next();
+
+                if (confirmacao.equalsIgnoreCase("S")) {
+                    String deletarAutomovel = "DELETE FROM automoveis WHERE id_estoque = ?";
+                    PreparedStatement preparedStatementDeletar = conexao.prepareStatement(deletarAutomovel);
+                    preparedStatementDeletar.setInt(1, idSelecionado);
+                    preparedStatementDeletar.executeUpdate();
+
+                    System.out.println("Veículo comprado com sucesso!");
+
+                    
+                    String atualizarIDs = "UPDATE automoveis SET id_estoque = id_estoque - 1 WHERE id_estoque > ?";
+                    PreparedStatement preparedStatementAtualizarIDs = conexao.prepareStatement(atualizarIDs);
+                    preparedStatementAtualizarIDs.setInt(1, idSelecionado);
+                    preparedStatementAtualizarIDs.executeUpdate();
+                } else {
+                    System.out.println("Compra cancelada.");
+                }
+            } else {
+                System.out.println("ID de veículo inválido.");
+            }
+
+            resultSetAutomovel.close();
+        } else {
+            System.out.println("Compra cancelada.");
+        }
+    }
+
+    private static void cadastrarVeiculo(Connection conexao, Statement statement) throws SQLException {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Digite a marca do veículo: ");
+        String marca = scanner.nextLine();
+
+        System.out.print("Digite o modelo do veículo: ");
+        String modelo = scanner.nextLine();
+
+        System.out.print("Digite o ano do veículo: ");
+        int ano = scanner.nextInt();
+
+        System.out.print("Digite o valor do veículo: ");
+        BigDecimal valor = scanner.nextBigDecimal();
+
+        String inserirAutomovel = "INSERT INTO automoveis (id_estoque, marca, modelo, ano, valor) VALUES (?, ?, ?, ?, ?)";
+
+        
+        String obterProximoID = "SELECT MAX(id_estoque) FROM automoveis";
+        ResultSet resultSetProximoID = statement.executeQuery(obterProximoID);
+        int proximoID = 1;
+
+        if (resultSetProximoID.next()) {
+            proximoID = resultSetProximoID.getInt(1) + 1;
+        }
+
+        PreparedStatement preparedStatement = conexao.prepareStatement(inserirAutomovel);
+        preparedStatement.setInt(1, proximoID);
+        preparedStatement.setString(2, marca);
+        preparedStatement.setString(3, modelo);
+        preparedStatement.setInt(4, ano);
+        preparedStatement.setBigDecimal(5, valor);
+
+        preparedStatement.executeUpdate();
+
+        System.out.println("Veículo cadastrado com sucesso!");
+    }
+    
+    private static void editarVeiculo(Connection conexao, Statement statement) throws SQLException {
+    Scanner scanner = new Scanner(System.in);
+
+    System.out.print("Digite o ID do veículo que deseja editar: ");
+    int idSelecionado = scanner.nextInt();
+    scanner.nextLine(); 
+
+    String selecionarAutomovel = "SELECT * FROM automoveis WHERE id_estoque = ?";
+    PreparedStatement preparedStatement = conexao.prepareStatement(selecionarAutomovel);
+    preparedStatement.setInt(1, idSelecionado);
+
+    ResultSet resultSetAutomovel = preparedStatement.executeQuery();
+
+    if (resultSetAutomovel.next()) {
+        String marca = resultSetAutomovel.getString("marca");
+        String modelo = resultSetAutomovel.getString("modelo");
+        int ano = resultSetAutomovel.getInt("ano");
+        BigDecimal valor = resultSetAutomovel.getBigDecimal("valor");
+
+        System.out.println("\nDetalhes do Veículo Selecionado:");
+        System.out.println("---------------------------");
+        System.out.println("ID: " + idSelecionado);
+        System.out.println("Marca: " + marca);
+        System.out.println("Modelo: " + modelo);
+        System.out.println("Ano: " + ano);
+        System.out.println("Valor: R$ " + valor);
+        System.out.println("---------------------------");
+
+        System.out.print("\nDigite a marca do veículo: ");
+        String novaMarca = scanner.nextLine();
+
+        System.out.print("Digite o modelo do veículo: ");
+        String novoModelo = scanner.nextLine();
+
+        System.out.print("Digite o ano do veículo: ");
+        int novoAno = scanner.nextInt();
+        scanner.nextLine(); 
+
+        System.out.print("Digite o valor do veículo: ");
+        BigDecimal novoValor = scanner.nextBigDecimal();
+
+        String atualizarAutomovel = "UPDATE automoveis SET marca = ?, modelo = ?, ano = ?, valor = ? WHERE id_estoque = ?";
+        PreparedStatement preparedStatementAtualizar = conexao.prepareStatement(atualizarAutomovel);
+        preparedStatementAtualizar.setString(1, novaMarca);
+        preparedStatementAtualizar.setString(2, novoModelo);
+        preparedStatementAtualizar.setInt(3, novoAno);
+        preparedStatementAtualizar.setBigDecimal(4, novoValor);
+        preparedStatementAtualizar.setInt(5, idSelecionado);
+
+        preparedStatementAtualizar.executeUpdate();
+
+        System.out.println("Veículo atualizado com sucesso!");
+    } else {
+        System.out.println("ID de veículo inválido.");
+    }
+
+    resultSetAutomovel.close();
+}
+
+    private static void visualizarListaVeiculos(Statement statement) throws SQLException {
+        String lerAutomoveis = "SELECT * FROM automoveis ORDER BY ano DESC";
+        ResultSet resultSetAutomoveis = statement.executeQuery(lerAutomoveis);
+
+        DecimalFormat decimalFormat = new DecimalFormat("#,##0.00");
+
+        System.out.println("\nLista de Carros Disponíveis (Ordem Decrescente por Ano):");
+        System.out.println("---------------------------");
+
+        while (resultSetAutomoveis.next()) {
+            int id = resultSetAutomoveis.getInt("id_estoque");
+            String marca = resultSetAutomoveis.getString("marca");
+            String modelo = resultSetAutomoveis.getString("modelo");
+            int ano = resultSetAutomoveis.getInt("ano");
+            BigDecimal valor = resultSetAutomoveis.getBigDecimal("valor");
+
+            System.out.println("ID: " + id);
+            System.out.println("Marca: " + marca);
+            System.out.println("Modelo: " + modelo);
+            System.out.println("Ano: " + ano);
+            System.out.println("Valor: R$ " + decimalFormat.format(valor));
+            System.out.println("---------------------------");
+        }
+
+        resultSetAutomoveis.close();
+    }
+    private static void removerVeiculo(Statement statement, Scanner scanner) throws SQLException {
+    System.out.println("Digite o ID do veículo que deseja remover:");
+    int idVeiculo = scanner.nextInt();
+
+    String removerVeiculo = "DELETE FROM automoveis WHERE id = " + idVeiculo;
+    statement.executeUpdate(removerVeiculo);
+
+    System.out.println("Veículo removido com sucesso!");
+}
+
+}
